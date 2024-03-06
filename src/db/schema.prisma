@@ -1,0 +1,51 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URI")
+}
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "./client"
+  engineType    = "binary"
+  binaryTargets = ["native"]
+}
+
+generator typegraphql {
+  provider        = "typegraphql-prisma"
+  output          = "../common/graphql/types"
+  emitOnly        = ["models", "inputs"]
+  useSimpleInputs = true
+}
+
+model User {
+  id   String @id @default(uuid())
+  name String
+  email String @unique
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  roles UserRole[]
+}
+
+model UserRole {
+  id        String  @id @default(uuid())
+  userId    String  @map("user_id")
+  role      Role
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamp(0)
+
+  /// @TypeGraphQL.omit(output: false, input: true)
+  user    User     @relation(fields: [userId], references: [id], onUpdate: NoAction, onDelete: Cascade)
+
+  @@unique([userId, role])
+  @@map("user_roles")
+}
+
+enum Role {
+  OWNER
+  GUEST
+
+  @@map("role")
+}
